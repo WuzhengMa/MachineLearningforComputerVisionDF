@@ -31,12 +31,6 @@ plot_toydata(data_train);
     
 scatter(data_test(:,1),data_test(:,2),'.b');
 
-%Bagging
-sizeOfBagging = 150;
-trainingDataBagging = cell(1,4);
-for i=1:4
-    trainingDataBagging{i} = datasample(data_train, sizeOfBagging);
-end;
 
 %% Q1 Train Decision Trees
 
