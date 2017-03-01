@@ -158,6 +158,9 @@ for classf = classifierID
         bestgain = maxgain;
         model= modelCandidate;
         model.classifierID= classf;
+        %----------------edition performed by WuzhengMa
+        model.bestGain = bestgain;
+        %----------------------------------------------
     end
 
 end

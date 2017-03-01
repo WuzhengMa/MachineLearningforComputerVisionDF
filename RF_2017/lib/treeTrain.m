@@ -46,6 +46,12 @@ for n = 1: numInternals
     % split data to child nodes
     yhat= weakTest(weakModels{n}, Xrel, opts);
     
+    %----Wuzheng Ma edited this code------------ 
+    [leftHistogram, rightHistogram] = getChildrenNodesHistogram(Yrel, yhat);
+    weakModels{n}.leftHistogram = leftHistogram;
+    weakModels{n}.rightHistogram = rightHistogram;
+    %-------------------------------------------
+    
     dataix(reld, 2*n)= yhat;
     dataix(reld, 2*n+1)= 1 - yhat; % since yhat is in {0,1} and double
 end
@@ -63,3 +69,17 @@ model.depth= d;
 model.classes= u;
 model.weakModels= weakModels;
 end
+
+%----Wuzheng Ma edited this code------------
+function [leftHistogram, rightHistogram] = getChildrenNodesHistogram(Yrel, yhat)
+    leftHistogram = [];
+    rightHistogram = [];
+    for i = 1:size(Yrel)
+        if(yhat(i) == 0)
+            leftHistogram = [leftHistogram, Yrel(i)];
+        else
+            rightHistogram = [rightHistogram, Yrel(i)];
+        end
+    end
+end
+%-------------------------------------------
