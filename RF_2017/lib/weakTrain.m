@@ -52,13 +52,13 @@ for classf = classifierID
         for q= 1:numSplits
             
             if mod(q-1,5)==0
-                r= randi(D);
-                col= X(:, r);
+                r= randi(D);    %randomly choose a deminsion
+                col= X(:, r);   
                 tmin= min(col);
                 tmax= max(col);
             end
             
-            t= rand(1)*(tmax-tmin)+tmin;
+            t= rand(1)*(tmax-tmin)+tmin;    %randomly choose a threshold between tmax and tmin
             dec = col < t;
             Igain = evalDecision(Y, dec, u);
 
@@ -147,7 +147,26 @@ for classf = classifierID
                 modelCandidate.t= t;
             end
         end
-
+    %--------------Wuzheng edited this code---------------    
+    elseif classf==5
+        for q= 1:numSplits
+            dimen = randperm(D);
+            col1 = X(:,dimen(1));
+            wmin = min(col1);
+            wmax = max(col1);
+            w = [1, -1, wmin+(wmax-wmin)*rand(1)]'; %r1-r2=threshold
+            
+            dec = [X(:, dimen), ones(N, 1)]*w < 0;
+            Igain = evalDecision(Y, dec, u);
+            
+            if Igain>maxgain
+                maxgain = Igain;
+                modelCandidate.r1= dimen(1);
+                modelCandidate.r2= dimen(2);
+                modelCandidate.w= w;
+            end
+        end
+    %-----------------------------------------------------
     else
         fprintf('Error in weak train! Classifier with ID = %d does not exist.\n', classf);
     end
