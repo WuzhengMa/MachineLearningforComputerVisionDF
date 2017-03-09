@@ -120,9 +120,18 @@ for i = 1:4
 end
 
 %Visualise parent node split
+range = [-1.5, 1.5];
 figure;
 subplot(2,2,1);
-%visualize axis-aligned
+%visualise axis-aligned learner
+plot_toydata(bagged_data_train{1});
+threshold = treeModels{1}.weakModels{1}.t;
+if treeModels{1}.weakModels{1}.r == 1
+    plot([threshold threshold],[range(1),range(2)],'black');
+else
+    plot([range(1),range(2)], [threshold threshold],'black');
+end
+title('Axis-aligned learner')
 subplot(2,2,2);
 hist(bagged_data_train{1}(:,3), 1:3);
 title('Histogram of Training Set');
@@ -137,33 +146,51 @@ title('Histogram of Right Child Node');
 figure;
 subplot(2,2,1);
 bar(treeModels{1}.leafdist(13,:));
-title('Visualization on Leaf Node (13th)');
+title('Visualization on Leaf Node (28th)');
 subplot(2,2,2);
 bar(treeModels{1}.leafdist(14,:));
-title('Visualization on Leaf Node (14th)');
+title('Visualization on Leaf Node (29th)');
 subplot(2,2,3);
 bar(treeModels{1}.leafdist(15,:));
-title('Visualization on Leaf Node (15th)');
+title('Visualization on Leaf Node (30th)');
 subplot(2,2,4);
 bar(treeModels{1}.leafdist(16,:));
-title('Visualization on Leaf Node (16th)');
+title('Visualization on Leaf Node (31th)');
 
 
 %% Q2
 
 %Classification on Novel Test Points 
 test_point = [-.5 -.7; .4 .3; -.7 .4; .5 -.5];
-%[testLabel, testProb] = forestTest(treeModels, test_point, opts);
-% hold on;
-% scatterTestData([test_point, testLabel], 'Novel');
-% plot_toydata(data_train);
-% hold off;
-% title('Novel Testing Points Classification Result');
-
-%Classification on Dense Test Points
-[testLabel, testProb] = forestTest(treeModels, data_test(:,1:2), opts);
+[testLabel, testProb] = forestTest(treeModels, test_point, opts);
 figure;
 hold on;
-scatterTestData([data_test, testLabel], 'Dense');
+scatterTestData([test_point, testLabel], 'Novel');
 plot_toydata(data_train);
 hold off;
+title('Novel Testing Points Classification Result');
+figure;
+subplot(2,2,1);
+bar(testProb(1,:));
+title('Class distribution of the 1st test data')
+subplot(2,2,2);
+bar(testProb(2,:));
+title('Class distribution of the 2nd test data')
+subplot(2,2,3);
+bar(testProb(3,:));
+title('Class distribution of the 3rd test data')
+subplot(2,2,4);
+bar(testProb(4,:));
+title('Class distribution of the 4th test data')
+figure;
+bar(mean(testProb,1));
+title('Average class distribution of the novel test data')
+
+
+%Classification on Dense Test Points
+% [testLabel, testProb] = forestTest(treeModels, data_test(:,1:2), opts);
+% figure;
+% hold on;
+% scatterTestData([data_test, testLabel], 'Dense');
+% plot_toydata(data_train);
+% hold off;
