@@ -36,87 +36,88 @@ end;
 % plot_toydata(bagged_data_train{4});
 
 %%Train the decision forest
-% opts = struct;
-% opts.depth = 5; 
-% opts.numTrees= 4; 
+opts = struct;
+opts.depth = 5; 
+opts.numTrees= 4; 
 
 %Comparing IG among all split functions
-% 
-% IG1_100 = zeros(1,120);
-% IG2_100 = zeros(1,120);
-% IG3_100 = zeros(1,120);
-% IG4_100 = zeros(1,120); 
-% IG5_100 = zeros(1,120); 
-% for times = 1:1 %run 100 times and compute average
-%     IG1 = [];
-%     IG2 = [];
-%     IG3 = [];
-%     IG4 = [];
-%     IG5 = []; 
-%     for degreeOfFreedom = 1:120
-%         opts.numSplits= degreeOfFreedom;  %Number of splits to try
-%         opts.classifierID= 1; % which split function to be used
-%         model1 = weakTrain(bagged_data_train{1}(:,[1,2]),bagged_data_train{1}(:,3), opts);
-%         IG1 = [IG1, model1.bestGain];
-% 
-%         opts.classifierID= 2; % which split function to be used
-%         model2 = weakTrain(bagged_data_train{1}(:,[1,2]),bagged_data_train{1}(:,3), opts);
-%         IG2 = [IG2, model2.bestGain];
-% 
-%         opts.classifierID= 3; % which split function to be used
-%         model3 = weakTrain(bagged_data_train{1}(:,[1,2]),bagged_data_train{1}(:,3), opts);
-%         IG3 = [IG3, model3.bestGain];
-% 
-%         opts.classifierID= 4; % which split function to be used
-%         model4 = weakTrain(bagged_data_train{1}(:,[1,2]),bagged_data_train{1}(:,3), opts);
-%         IG4 = [IG4, model4.bestGain];
-%         
-%         opts.classifierID= 5; % which split function to be used
-%         model5 = weakTrain(bagged_data_train{1}(:,[1,2]),bagged_data_train{1}(:,3), opts);
-%         IG5 = [IG5, model5.bestGain];
-%     end
-%     IG1_100 = IG1_100 + IG1;
-%     IG2_100 = IG2_100 + IG2;
-%     IG3_100 = IG3_100 + IG3;
-%     IG4_100 = IG4_100 + IG4;
-%     IG5_100 = IG5_100 + IG5;
-% end
 
-% figure;
-% hold on;
-% plot(IG1_100/100);
-% title('Average Information Gain varies against different degree of freedom');
-% xlabel('Degree of Freedom');
-% ylabel('Information Gain');
-% 
-% plot(IG2_100/100);
-% xlabel('Degree of Freedom');
-% ylabel('Information Gain');
-% 
-% plot(IG3_100/100);
-% xlabel('Degree of Freedom');
-% ylabel('Information Gain');
-% 
-% plot(IG4_100/100);
-% xlabel('Degree of Freedom');
-% ylabel('Information Gain');
-% 
-% plot(IG5_100/100);
-% xlabel('Degree of Freedom');
-% ylabel('Information Gain');
-% legend('decision stump','2D linear', 'Conic section learner', 'Distance learner', '2-pixel learner')
-% hold off;
+IG1_100 = zeros(1,120);
+IG2_100 = zeros(1,120);
+IG3_100 = zeros(1,120);
+IG4_100 = zeros(1,120); 
+IG5_100 = zeros(1,120); 
+for times = 1:100 %run 100 times and compute average
+    IG1 = [];
+    IG2 = [];
+    IG3 = [];
+    IG4 = [];
+    IG5 = []; 
+    for degreeOfFreedom = 1:120
+        opts.numSplits= degreeOfFreedom;  %Number of splits to try
+        opts.classifierID= 1; % which split function to be used
+        model1 = weakTrain(bagged_data_train{1}(:,[1,2]),bagged_data_train{1}(:,3), opts);
+        IG1 = [IG1, model1.bestGain];
+
+        opts.classifierID= 2; % which split function to be used
+        model2 = weakTrain(bagged_data_train{1}(:,[1,2]),bagged_data_train{1}(:,3), opts);
+        IG2 = [IG2, model2.bestGain];
+
+        opts.classifierID= 3; % which split function to be used
+        model3 = weakTrain(bagged_data_train{1}(:,[1,2]),bagged_data_train{1}(:,3), opts);
+        IG3 = [IG3, model3.bestGain];
+
+        opts.classifierID= 4; % which split function to be used
+        model4 = weakTrain(bagged_data_train{1}(:,[1,2]),bagged_data_train{1}(:,3), opts);
+        IG4 = [IG4, model4.bestGain];
+        
+        opts.classifierID= 5; % which split function to be used
+        model5 = weakTrain(bagged_data_train{1}(:,[1,2]),bagged_data_train{1}(:,3), opts);
+        IG5 = [IG5, model5.bestGain];
+    end
+    IG1_100 = IG1_100 + IG1;
+    IG2_100 = IG2_100 + IG2;
+    IG3_100 = IG3_100 + IG3;
+    IG4_100 = IG4_100 + IG4;
+    IG5_100 = IG5_100 + IG5;
+end
+
+figure;
+hold on;
+plot(IG1_100/100);
+title('Average Information Gain varies against different degree of freedom');
+xlabel('Degree of Freedom');
+ylabel('Information Gain');
+
+plot(IG2_100/100);
+xlabel('Degree of Freedom');
+ylabel('Information Gain');
+
+plot(IG3_100/100);
+xlabel('Degree of Freedom');
+ylabel('Information Gain');
+
+plot(IG4_100/100);
+xlabel('Degree of Freedom');
+ylabel('Information Gain');
+
+plot(IG5_100/100);
+xlabel('Degree of Freedom');
+ylabel('Information Gain');
+legend('decision stump','2D linear', 'Conic section learner', 'Distance learner', '2-pixel learner')
+hold off;
 
 %Train A Decision Forest
 testLabels = cell(3);
 depthTrial = [6, 8, 10];
-numTreeTrial = [10 50 100];
+numTreeTrial = [10, 50, 100];
+randomness = [10, 50, 100];
 for k = 1:3
     for j = 1:3
         opts = struct;
-        opts.depth = depthTrial(k); 
-        opts.numTrees= numTreeTrial(j); 
-        opts.numSplits= 15;  %Number of splits to try
+        opts.depth = 5; 
+        opts.numTrees= numTreeTrial(k); 
+        opts.numSplits= randomness(j);  %Number of splits to try
         opts.classifierID= 1; % which split function to be used
         
         %Bagging
@@ -133,27 +134,27 @@ for k = 1:3
         end
 
         %Visualise parent node split
-        % range = [-1.5, 1.5];
-        % figure;
-        % subplot(2,2,1);
+%         range = [-1.5, 1.5];
+%         figure;
+%         subplot(2,2,1);
         % %visualise axis-aligned learner
-        % plot_toydata(bagged_data_train{1});
-        % threshold = treeModels{1}.weakModels{1}.t;
-        % if treeModels{1}.weakModels{1}.r == 1
-        %     plot([threshold threshold],[range(1),range(2)],'black');
-        % else
-        %     plot([range(1),range(2)], [threshold threshold],'black');
-        % end
-        % title('Axis-aligned learner')
-        % subplot(2,2,2);
-        % hist(bagged_data_train{1}(:,3), 1:3);
-        % title('Histogram of Training Set');
-        % subplot(2,2,3);
-        % hist(treeModels{1}.weakModels{1}.leftHistogram, 1:3);
-        % title('Histogram of Left Child Node');
-        % subplot(2,2,4);
-        % hist(treeModels{1}.weakModels{1}.rightHistogram, 1:3);
-        % title('Histogram of Right Child Node');
+%         plot_toydata(bagged_data_train{1});
+%         threshold = treeModels{1}.weakModels{1}.t;
+%         if treeModels{1}.weakModels{1}.r == 1
+%             plot([threshold threshold],[range(1),range(2)],'black');
+%         else
+%             plot([range(1),range(2)], [threshold threshold],'black');
+%         end
+%         title('Axis-aligned learner')
+%         subplot(2,2,2);
+%         hist(bagged_data_train{1}(:,3), 1:3);
+%         title('Histogram of Training Set');
+%         subplot(2,2,3);
+%         hist(treeModels{1}.weakModels{1}.leftHistogram, 1:3);
+%         title('Histogram of Left Child Node');
+%         subplot(2,2,4);
+%         hist(treeModels{1}.weakModels{1}.rightHistogram, 1:3);
+%         title('Histogram of Right Child Node');
 
         %Visualize some leaf nodes
         % figure;
@@ -174,8 +175,8 @@ for k = 1:3
         %% Q2
 
         %Classification on Novel Test Points 
-        % test_point = [-.5 -.7; .4 .3; -.7 .4; .5 -.5];
-        % [testLabel, testProb] = forestTest(treeModels, test_point, opts);
+        test_point = [-.5 -.7; .4 .3; -.7 .4; .5 -.5];
+        [testLabel, testProb] = forestTest(treeModels, test_point, opts);
         % figure;
         % hold on;
         % scatterTestData([test_point, testLabel], 'Novel');
@@ -209,7 +210,10 @@ for k = 1:3
 %         plot_toydata(data_train);
 %         title('Classification Result of Dense Data')
 %         hold off;
-    end
-end
-VisualNumOfTreeVSDepth(testLabels, data_test);
+%     end
+% end
 
+%Plots Changing paramters for decision forests
+%VisualNumOfTreeVSDepth(testLabels, data_test, data_train);
+%VisualRandomnessVSDepth(testLabels, data_test, data_train);
+%VisualNumOfTreeVSRandomness(testLabels, data_test, data_train);
