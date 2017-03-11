@@ -8,6 +8,15 @@ function [ data_train, data_query ] = getData( MODE )
 %   4. Caltech 101
 
 showImg = 0;%1; % Show training & testing images and their image feature vector (histogram representation)
+useKmeansCB=0; % Use kmeans codebook for 1 or RF codebook for 0
+
+if ~useKmeansCB
+    opts = struct;
+    opts.depth = 9; 
+    opts.numTrees= 10; 
+    opts.numSplits= 5;  %Number of splits to try
+    opts.classifierID= 1; % which split function to be used
+end
 
 PHOW_Sizes = [4 8 10]; % Multi-resolution, these values determine the scale of each layer.
 PHOW_Step = 8; % The lower the denser. Select from {2,4,8,16}
@@ -118,61 +127,95 @@ switch MODE
             end
         end
         
-        disp('Building visual codebook...')
-        % Build visual vocabulary (codebook) for 'Bag-of-Words method'
-        desc_sel = single(vl_colsubset(cat(2,desc_tr{:}), 10e4)); % Randomly select 100k SIFT descriptors for clustering
+        %----------------------------------------------------------------------------
+        % Kmeans codebook
+        if useKmeansCB
+            
+            disp('Building visual codebook...')
+            % Build visual vocabulary (codebook) for 'Bag-of-Words method'
+            desc_sel = single(vl_colsubset(cat(2,desc_tr{:}), 10e4)); % Randomly select 100k SIFT descriptors for clustering
         
-        % K-means clustering
-        numBins = 1024; % for instance,
-        
-        
-        % write your own codes here
-        % ...
-        %[idx,C] = kmeans(desc_sel',numBins,'Distance','sqeuclidean','MaxIter',200, 'Replicates',20);
-        
-        %save('KmeansClus1024.mat','idx','C');
-       
-        load('KmeansClus1024.mat');
-        
+            % K-means clustering
+            numBins = 1024; % for instance,
+
+
+            % write your own codes here
+            % ...
+            %[idx,C] = kmeans(desc_sel',numBins,'Distance','sqeuclidean','MaxIter',200, 'Replicates',20);
+
+            %save('KmeansClus1024.mat','idx','C');
+
+            load('KmeansClus1024.mat');
+        %----------------------------------------------------------------------------
+        % RF codebook
+        else
+            disp('Building visual codebook...')
+            % Build visual vocabulary (codebook) for 'Bag-of-Words method'
+            %[desc_sel, desc_idx] = vl_colsubset(cat(2,desc_tr{:}), 10e4); % Randomly select 100k SIFT descriptors for clustering
+            
+            %Train several trees, use different bag for each tree
+            RFCB_treeModels = cell(1, opts.numTrees);
+            for i = 1:opts.numTrees
+                desc_sel=[];
+                desc_label=[];
+                for cls = 1:length(classList)
+                    for idx = 1:length(imgIdx_tr)
+                        desc_sel = cat(2,desc_sel,single(vl_colsubset(cat(2,desc_tr{:}), 1000))); % Randomly select 100k SIFT descriptors for clustering
+                        desc_label = cat(2, desc_label, ((cls-1)*length(imgIdx_tr)+idx)*ones(1, 1000));
+                    end
+                end
+                RFCB_treeModels{i} = treeTrain(desc_sel', desc_label', opts);
+            end
+                        
+        end
+        %----------------------------------------------------------------------------
         disp('Encoding Images...')
         % Vector Quantisation
         
         % write your own codes here
         % ...
-        bagOfW=zeros(150, numBins);
-        labelsDummy=ones(150,1);
-        for imgClass=1:10
-            for imgIndex=1:15
-                  
-                  %Find the nearest neighbour to of the query image
-                  nnCluster=knnsearch(C,single(desc_tr{imgClass,imgIndex}')); 
-                  
-                  %Using BoW to represent the image
-                  bagOfW((imgClass-1)*15+imgIndex,:)=hist(nnCluster,(1:numBins));
-                  
-                  labelsDummy((imgClass-1)*15+imgIndex,:)=imgClass;
-                  
-                  %{
-                  %Visualise training and testing images for selected class
-                  %and index
-                  if imgIdx<2 && (imgClass==3 || imgClass==4 )
-                      figure('Position', [100, 100, 800, 300]);
-                      subplot(1,2,1);
-                      subFolderName = fullfile(folderName,classList{imgClass});
-                      imgList = dir(fullfile(subFolderName,'*.jpg'));
-                      I = imread(fullfile(subFolderName,imgList(imgIdx_tr(imgIdx)).name));
-                      imshow(I);
-                      title('Sample training image ');
-                      subplot(1,2,2);
-                      hist(nnCluster,[1:kclass]);
-                      axis([0,kclass,0,inf]);
-                      title('Training image histogram ');
-                  end
-                    %}
-            end
-        end
+        %----------------------------------------------------------------------------
+        % Kmeans codebook
+        if useKmeansCB
+            bagOfW=zeros(150, numBins);
+            labelsDummy=ones(150,1);
+            for imgClass=1:10
+                for imgIndex=1:15
 
-        data_train = [bagOfW labelsDummy];
+                      %Find the nearest neighbour to of the query image
+                      nnCluster=knnsearch(C,single(desc_tr{imgClass,imgIndex}')); 
+
+                      %Using BoW to represent the image
+                      bagOfW((imgClass-1)*15+imgIndex,:)=hist(nnCluster,(1:numBins));
+
+                      labelsDummy((imgClass-1)*15+imgIndex,:)=imgClass;
+                end
+            end
+
+            data_train = [bagOfW labelsDummy];
+        else
+        %----------------------------------------------------------------------------
+        % RFCB codebook
+            bagOfW=zeros(150, 2^(opts.depth-1)*opts.numTrees);
+            labelsDummy=ones(150,1);
+            for imgClass=1:10
+                for imgIndex=1:15
+
+                  %Find the nearest neighbour to of the query image
+                    for i = 1:opts.numTrees
+                        [~, ~, leafIdx] = treeTest_rIdx(RFCB_treeModels{i}, single(desc_tr{imgClass,imgIndex}'), opts);
+                        %Using BoW to represent the image
+                        bagOfW((imgClass-1)*15+imgIndex,(i-1)*2^(opts.depth-1)+1:i*2^(opts.depth-1))=hist(leafIdx,(1:2^(opts.depth-1)));
+                    end
+
+                      labelsDummy((imgClass-1)*15+imgIndex,:)=imgClass;
+                end
+            end
+
+            data_train = [bagOfW labelsDummy];
+            
+        end
+        
         
         % Clear unused varibles to save memory
         clearvars desc_tr desc_sel
@@ -220,33 +263,51 @@ switch MODE
         
         % write your own codes here
         % ...
-        bagOfW_te=zeros(150, numBins);
-        for imgClass=1:10
-            for imgIndex=1:15
-                  
-                  %Find the nearest neighbour to of the query image
-                  nnCluster_te=knnsearch(C,single(desc_te{imgClass,imgIndex}')); 
-                  
-                  %Using BoW to represent the image
-                  bagOfW_te((imgClass-1)*15+imgIndex,:)=hist(nnCluster_te,(1:numBins));
-                  
-                  %{
-                  %Visualise training and testing images for selected class
-                  %and index
-                  if imgIdx<2 && (imgClass==3 || imgClass==4 )
-                      figure('Position', [100, 100, 800, 300]);
-                      subplot(1,2,1);
-                      subFolderName = fullfile(folderName,classList{imgClass});
-                      imgList = dir(fullfile(subFolderName,'*.jpg'));
-                      I = imread(fullfile(subFolderName,imgList(imgIdx_tr(imgIdx)).name));
-                      imshow(I);
-                      title('Sample training image ');
-                      subplot(1,2,2);
-                      hist(nnCluster,[1:kclass]);
-                      axis([0,kclass,0,inf]);
-                      title('Training image histogram ');
-                  end
-                    %}
+        %----------------------------------------------------------------------------
+        % Kmeans codebook
+        if useKmeansCB
+            bagOfW_te=zeros(150, numBins);
+            for imgClass=1:10
+                for imgIndex=1:15
+
+                      %Find the nearest neighbour to of the query image
+                      nnCluster_te=knnsearch(C,single(desc_te{imgClass,imgIndex}')); 
+
+                      %Using BoW to represent the image
+                      bagOfW_te((imgClass-1)*15+imgIndex,:)=hist(nnCluster_te,(1:numBins));
+
+                      %{
+                      %Visualise training and testing images for selected class
+                      %and index
+                      if imgIdx<2 && (imgClass==3 || imgClass==4 )
+                          figure('Position', [100, 100, 800, 300]);
+                          subplot(1,2,1);
+                          subFolderName = fullfile(folderName,classList{imgClass});
+                          imgList = dir(fullfile(subFolderName,'*.jpg'));
+                          I = imread(fullfile(subFolderName,imgList(imgIdx_tr(imgIdx)).name));
+                          imshow(I);
+                          title('Sample training image ');
+                          subplot(1,2,2);
+                          hist(nnCluster,[1:kclass]);
+                          axis([0,kclass,0,inf]);
+                          title('Training image histogram ');
+                      end
+                        %}
+                end
+            end
+        else
+        %----------------------------------------------------------------------------
+        % RFCB codebook
+            bagOfW_te=zeros(150, 2^(opts.depth-1)*opts.numTrees);
+            for imgClass=1:10
+                for imgIndex=1:15
+
+                    for i = 1:opts.numTrees
+                        [~, ~, leafIdx_te] = treeTest_rIdx(RFCB_treeModels{i}, single(desc_te{imgClass,imgIndex}'), opts);
+                        %Using BoW to represent the image
+                        bagOfW_te((imgClass-1)*15+imgIndex,(i-1)*2^(opts.depth-1)+1:i*2^(opts.depth-1))=hist(leafIdx_te,(1:2^(opts.depth-1)));
+                    end
+                end
             end
         end
         
