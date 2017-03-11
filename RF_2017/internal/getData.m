@@ -7,7 +7,7 @@ function [ data_train, data_query ] = getData( MODE )
 %   3. Toy_Circle
 %   4. Caltech 101
 
-showImg = 1; % Show training & testing images and their image feature vector (histogram representation)
+showImg = 0;%1; % Show training & testing images and their image feature vector (histogram representation)
 
 PHOW_Sizes = [4 8 10]; % Multi-resolution, these values determine the scale of each layer.
 PHOW_Step = 8; % The lower the denser. Select from {2,4,8,16}
@@ -123,19 +123,56 @@ switch MODE
         desc_sel = single(vl_colsubset(cat(2,desc_tr{:}), 10e4)); % Randomly select 100k SIFT descriptors for clustering
         
         % K-means clustering
-        numBins = 256; % for instance,
+        numBins = 1024; % for instance,
         
         
         % write your own codes here
         % ...
-            
+        %[idx,C] = kmeans(desc_sel',numBins,'Distance','sqeuclidean','MaxIter',200, 'Replicates',20);
+        
+        %save('KmeansClus1024.mat','idx','C');
        
+        load('KmeansClus1024.mat');
+        
         disp('Encoding Images...')
         % Vector Quantisation
         
         % write your own codes here
         % ...
-  
+        bagOfW=zeros(150, numBins);
+        labelsDummy=ones(150,1);
+        for imgClass=1:10
+            for imgIndex=1:15
+                  
+                  %Find the nearest neighbour to of the query image
+                  nnCluster=knnsearch(C,single(desc_tr{imgClass,imgIndex}')); 
+                  
+                  %Using BoW to represent the image
+                  bagOfW((imgClass-1)*15+imgIndex,:)=hist(nnCluster,(1:numBins));
+                  
+                  labelsDummy((imgClass-1)*15+imgIndex,:)=imgClass;
+                  
+                  %{
+                  %Visualise training and testing images for selected class
+                  %and index
+                  if imgIdx<2 && (imgClass==3 || imgClass==4 )
+                      figure('Position', [100, 100, 800, 300]);
+                      subplot(1,2,1);
+                      subFolderName = fullfile(folderName,classList{imgClass});
+                      imgList = dir(fullfile(subFolderName,'*.jpg'));
+                      I = imread(fullfile(subFolderName,imgList(imgIdx_tr(imgIdx)).name));
+                      imshow(I);
+                      title('Sample training image ');
+                      subplot(1,2,2);
+                      hist(nnCluster,[1:kclass]);
+                      axis([0,kclass,0,inf]);
+                      title('Training image histogram ');
+                  end
+                    %}
+            end
+        end
+
+        data_train = [bagOfW labelsDummy];
         
         % Clear unused varibles to save memory
         clearvars desc_tr desc_sel
@@ -183,6 +220,37 @@ switch MODE
         
         % write your own codes here
         % ...
+        bagOfW_te=zeros(150, numBins);
+        for imgClass=1:10
+            for imgIndex=1:15
+                  
+                  %Find the nearest neighbour to of the query image
+                  nnCluster_te=knnsearch(C,single(desc_te{imgClass,imgIndex}')); 
+                  
+                  %Using BoW to represent the image
+                  bagOfW_te((imgClass-1)*15+imgIndex,:)=hist(nnCluster_te,(1:numBins));
+                  
+                  %{
+                  %Visualise training and testing images for selected class
+                  %and index
+                  if imgIdx<2 && (imgClass==3 || imgClass==4 )
+                      figure('Position', [100, 100, 800, 300]);
+                      subplot(1,2,1);
+                      subFolderName = fullfile(folderName,classList{imgClass});
+                      imgList = dir(fullfile(subFolderName,'*.jpg'));
+                      I = imread(fullfile(subFolderName,imgList(imgIdx_tr(imgIdx)).name));
+                      imshow(I);
+                      title('Sample training image ');
+                      subplot(1,2,2);
+                      hist(nnCluster,[1:kclass]);
+                      axis([0,kclass,0,inf]);
+                      title('Training image histogram ');
+                  end
+                    %}
+            end
+        end
+        
+        data_query = [bagOfW_te labelsDummy];
         
         
     otherwise % Dense point for 2D toy data
