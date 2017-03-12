@@ -124,6 +124,15 @@ switch MODE
                 
                 % For details of image description, see http://www.vlfeat.org/matlab/vl_phow.html
                 [~, desc_tr{c,i}] = vl_phow(single(I),'Sizes',PHOW_Sizes,'Step',PHOW_Step); %  extracts PHOW features (multi-scaled Dense SIFT)
+            
+                %{
+                % visualize one of the pic
+                if c==9 && i==1
+                    subplot(1,2,2);
+                    imshow(I);
+                    title('.. is misclassified into..');
+                end
+                %}
             end
         end
         
@@ -143,7 +152,7 @@ switch MODE
             % ...
             %[idx,C] = kmeans(desc_sel',numBins,'Distance','sqeuclidean','MaxIter',200, 'Replicates',20);
 
-            %save('KmeansClus1024.mat','idx','C');
+            %save('KmeansClus2048.mat','idx','C');
 
             load('KmeansClus1024.mat');
         %----------------------------------------------------------------------------
@@ -191,7 +200,12 @@ switch MODE
                       labelsDummy((imgClass-1)*15+imgIndex,:)=imgClass;
                 end
             end
-
+            %{
+            % visualize one of the hist
+            subplot(1,2,2);
+            histogram(bagOfW(1,:));
+            title('Bag of Word representation');
+            %}
             data_train = [bagOfW labelsDummy];
         else
         %----------------------------------------------------------------------------
@@ -246,6 +260,15 @@ switch MODE
                     drawnow;
                 end
                 
+                %{
+                % visualize one of the hist
+                if c==3 && i==1
+                    subplot(1,2,1);
+                    imshow(I);
+                    title('The Test Image');
+                end
+                %}
+                
                 if size(I,3) == 3
                     I = rgb2gray(I);
                 end
@@ -253,8 +276,9 @@ switch MODE
             
             end
         end
-        suptitle('Testing image samples');
+        
                 if showImg
+                    suptitle('Testing image samples');
             figure('Units','normalized','Position',[.5 .1 .4 .9]);
         suptitle('Testing image representations: 256-D histograms');
         end
